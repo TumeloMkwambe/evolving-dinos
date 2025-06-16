@@ -57,12 +57,11 @@ class Dinosaur extends Asset{
     constructor(){
         super(canvas.width / 4, canvas.height / 2, [right_run, left_run, left_duck, right_duck, dead]);
         this.isRunning = false; // checks if dinosaur is still running
-
         this.isJumping = false; // checks if the dinosaur is jumping
+        this.isDucking = false; // checks if the dinosaur is ducking
         this.velocity_y = 0; // vertical veolcity of dinosaur
         this.gravity = 0.5; // amount added to velocity_y at each frame
         this.jumpStrength = -10; // initial velocity when dinosaur starts jump (canvas renders top to bottom hence initial velocity is negative)
-
         this.frameCounter = 0;
         this.currentFrame = 0;
     }
@@ -94,7 +93,12 @@ class Dinosaur extends Asset{
                 this.currentFrame = 1 - this.currentFrame;
             }
         }
-        context.drawImage(this.currentFrame ? left_run : right_run, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+        if(this.isDucking){
+            context.drawImage(this.currentFrame ? left_duck : right_duck, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+        }
+        else{
+            context.drawImage(this.currentFrame ? left_run : right_run, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+        }
     }
 }
 
@@ -102,17 +106,27 @@ class Controls {
     constructor(dinosaur){
         this.dinosaur = dinosaur;
 
-        window.addEventListener('keyup', (e) => {
-            if (e.key === " ") {
+        window.addEventListener('keydown', (e) => {
+            if (e.key === " ") { 
                 if (!this.dinosaur.isRunning){
                     this.dinosaur.isRunning = true;
                 } else if (this.dinosaur.isRunning && !this.dinosaur.isJumping) {
                     this.dinosaur.jump();
                 }
             }
+            if (e.key === "ArrowDown") { 
+                this.dinosaur.isDucking = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === "ArrowDown") { 
+                this.dinosaur.isDucking = false;
+            }
         });
     }
 }
+
 
 class Game{
     constructor(dinosaur){
