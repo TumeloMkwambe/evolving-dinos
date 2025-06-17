@@ -30,10 +30,10 @@ dead.src = "../Assets/dead.webp";
 pterodactyl.src = "../Assets/pterodactyl.png";
 
 class Asset {
-    constructor(x, y, images_array){
-        this.asset_x = x; // x coordinate of the asset
-        this.asset_y = y; // y coordinate of the asset
+    constructor(x, images_array){
         this.ground_y = canvas.height / 2; // y coordinate of the world ground
+        this.asset_x = x; // x coordinate of the asset
+        this.asset_y = this.ground_y; // y coordinate of the asset
         this.asset_width = 75; // width of world asset (dinosaur, cactus, ...)
         this.asset_height = 75; // height of world asset
         this.images_array = images_array; // array of images of asset
@@ -55,7 +55,7 @@ class Asset {
 
 class Dinosaur extends Asset{
     constructor(){
-        super(canvas.width / 4, canvas.height / 2, [right_run, left_run, left_duck, right_duck, dead]);
+        super(canvas.width / 4, [right_run, left_run, left_duck, right_duck, dead]);
         this.isRunning = false; // checks if dinosaur is still running
         this.isJumping = false; // checks if the dinosaur is jumping
         this.isDucking = false; // checks if the dinosaur is ducking
@@ -107,11 +107,10 @@ class Dinosaur extends Asset{
 }
 
 class Cactus extends Asset {
-    constructor(cactus, width){
-        super(canvas.width, canvas.height / 2, [cactus]);
+    constructor(cactus, x, width){
+        super(x, [cactus]);
         this.isMoving = true;
         this.speed = 5;
-        this.asset_y = this.ground_y;
         this.asset_height = 75;
         this.asset_width = width;
     }
@@ -131,15 +130,43 @@ class Cactus extends Asset {
 }
 
 
+class Pterodactyl extends Asset {
+    constructor(cactus, x, y, width){
+        super(x, [cactus]);
+        this.isMoving = true;
+        this.speed = 5;
+        this.asset_height = 75;
+        this.asset_width = width;
+        this.asset_y = y;
+    }
+  
+    update(){
+        if(this.isMoving){
+            this.asset_x -= this.speed;
+            if(this.asset_x + this.asset_width < 0){
+                this.asset_x = canvas.width;
+            }
+        }
+    }
+  
+    draw(){
+        context.drawImage(this.images_array[0], this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+    }
+}
+
 class Controls {
     constructor(dinosaur){
         this.dinosaur = dinosaur;
 
         window.addEventListener('keydown', (e) => {
-            if (e.key === " ") { 
-                if (!this.dinosaur.isRunning){
+            if (e.key === " ") {
+                if (this.dinosaur.isDead) {
+                    location.reload();
+                } 
+                else if (!this.dinosaur.isRunning) {
                     this.dinosaur.isRunning = true;
-                } else if (this.dinosaur.isRunning && !this.dinosaur.isJumping) {
+                }
+                else if (this.dinosaur.isRunning && !this.dinosaur.isJumping) {
                     this.dinosaur.jump();
                 }
             }
@@ -156,21 +183,37 @@ class Controls {
     }
 }
 
-
 class Game{
-    constructor(dinosaur, cactus){
-        this.dinosaur = dinosaur; // dino object
-        this.cactus = cactus; // cactus object
+    constructor(dinosaur, cacti){
+        this.dinosaur = dinosaur;
+        this.cacti = cacti;
+        this.frameCounter = 0;
     }
 
     checkCollision = () => {
-        const distance_x = Math.abs(dinosaur.asset_x - cactus.asset_x);
-        const distance_y = Math.abs(dinosaur.asset_y - cactus.asset_y);
-        if (
-            distance_x <= 50 && distance_y <= 50
-        ) {
-            this.dinosaur.isRunning = false;
-            this.dinosaur.isDead = true;
+        this.cacti.forEach( cactus => {
+            const distance_x = Math.abs(dinosaur.asset_x - cactus.asset_x);
+            const distance_y = Math.abs(dinosaur.asset_y - cactus.asset_y);
+            if (
+                distance_x <= 50 && distance_y <= 50
+            ) {
+                this.dinosaur.isRunning = false;
+                this.dinosaur.isDead = true;
+            }
+        });
+    }
+
+    addCacti = () => {
+        if (this.frameCounter % 500 === 0 && this.frameCounter !== 0) {
+            if (Math.random() < 0.2) {
+                const newCactus = new Cactus(
+                    cactus_1, 
+                    canvas.width * 0.6, 
+                    50
+                );
+                newCactus.prepareImages();
+                this.cacti.push(newCactus);
+            }
         }
     }
 
@@ -181,21 +224,43 @@ class Game{
 
         if (this.dinosaur.isRunning){
             this.checkCollision();
+
+            console.log(this.frameCounter);
+            if (this.frameCounter % 250 === 0 && this.frameCounter !== 0) {
+                this.cacti.forEach((cactus) => {
+                    cactus.speed += 1;
+                    console.log(`Speed = ${cactus.speed}`)
+                });
+            }
+
             this.dinosaur.update();
-            this.cactus.update();
+            this.cacti.forEach( cactus => {
+                cactus.update();
+            });
+
+            this.frameCounter++;
         }
 
-        this.cactus.draw();
+        this.cacti.forEach( cactus => {
+            cactus.draw();
+        });
         this.dinosaur.draw();
         requestAnimationFrame(this.gameLoop.bind(this)); 
     }
 }
 
 const dinosaur = new Dinosaur();
-const cactus = new Cactus(cactus_3, 100);
-dinosaur.prepareImages();
-cactus.prepareImages();
+const cacti_1 = new Cactus(cactus_1, canvas.width / 2, 50);
+const cacti_3 = new Cactus(cactus_3, canvas.width * 0.75, 100);
+//const ptero = new Pterodactyl(pterodactyl, canvas.width, canvas.height * 0.3, 75);
 
-const game = new Game(dinosaur, cactus);
+const cacti = [cacti_1, cacti_3];
+dinosaur.prepareImages();
+cacti.forEach( cactus => {
+    cactus.prepareImages();
+});
+
+
+const game = new Game(dinosaur, cacti);
 new Controls(dinosaur);
 game.gameLoop();
