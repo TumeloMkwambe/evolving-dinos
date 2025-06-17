@@ -61,10 +61,11 @@ class Dinosaur extends Asset{
         this.isDucking = false; // checks if the dinosaur is ducking
         this.isDead = false;
         this.velocity_y = 0; // vertical veolcity of dinosaur
-        this.gravity = 0.4; // amount added to velocity_y at each frame
+        this.gravity = 0.3; // amount added to velocity_y at each frame
         this.jumpStrength = -10; // initial velocity when dinosaur starts jump (canvas renders top to bottom hence initial velocity is negative)
         this.frameCounter = 0;
         this.currentFrame = 0;
+        this.averageCactusSpeed = 5;
     }
   
     jump(){
@@ -90,7 +91,9 @@ class Dinosaur extends Asset{
     draw(){
         if(this.isRunning){
             this.frameCounter++;
-            if(this.frameCounter % 10 === 0){
+            const averageCactusSpeed = this.averageCactusSpeed || 5;
+            const animationRate = Math.max(2, Math.floor(50 / averageCactusSpeed));
+            if(this.frameCounter % (animationRate + 10) === 0){
                 this.currentFrame = 1 - this.currentFrame;
             }
         }
@@ -118,9 +121,8 @@ class Cactus extends Asset {
     update(){
         if(this.isMoving){
             this.asset_x -= this.speed;
-            if(this.asset_x + this.asset_width < 0){
-                this.asset_x = canvas.width;
-            }
+            this.isOutOfScreen = this.asset_x + this.asset_width < 0;
+
         }
     }
   
@@ -184,9 +186,9 @@ class Controls {
 }
 
 class Game{
-    constructor(dinosaur, cacti){
+    constructor(dinosaur){
         this.dinosaur = dinosaur;
-        this.cacti = cacti;
+        this.cacti = [];
         this.frameCounter = 0;
     }
 
@@ -203,20 +205,27 @@ class Game{
         });
     }
 
+    getAverageCactusSpeed = () => {
+        const total = this.cacti.reduce((sum, c) => sum + c.speed, 0);
+        return total / this.cacti.length || 5;
+    };
+
     addCacti = () => {
-        if (this.frameCounter % 500 === 0 && this.frameCounter !== 0) {
-            if (Math.random() < 0.2) {
+        if (this.frameCounter % 100 === 0 && this.frameCounter !== 0) {
+            if (Math.random() < 0.5) {
+                console.log("Add Cactus!");
                 const newCactus = new Cactus(
                     cactus_1, 
-                    canvas.width * 0.6, 
+                    canvas.width * (1 + Math.random()), 
                     50
                 );
+                newCactus.speed = this.getAverageCactusSpeed();
                 newCactus.prepareImages();
                 this.cacti.push(newCactus);
             }
         }
+        console.log(`Cacti: ${this.cacti}`);
     }
-
 
     gameLoop = () => {
         context.fillStyle = "#F7F7F7";
@@ -225,18 +234,21 @@ class Game{
         if (this.dinosaur.isRunning){
             this.checkCollision();
 
-            console.log(this.frameCounter);
-            if (this.frameCounter % 250 === 0 && this.frameCounter !== 0) {
+            console.log(`Frame Counter: ${this.frameCounter}.`);
+            if (this.frameCounter % 500 === 0 && this.frameCounter !== 0) {
                 this.cacti.forEach((cactus) => {
                     cactus.speed += 1;
-                    console.log(`Speed = ${cactus.speed}`)
+                    this.dinosaur.averageCactusSpeed = this.getAverageCactusSpeed();
                 });
             }
+
+            this.addCacti();
 
             this.dinosaur.update();
             this.cacti.forEach( cactus => {
                 cactus.update();
             });
+            this.cacti = this.cacti.filter(cactus => !cactus.isOutOfScreen);
 
             this.frameCounter++;
         }
@@ -250,17 +262,17 @@ class Game{
 }
 
 const dinosaur = new Dinosaur();
-const cacti_1 = new Cactus(cactus_1, canvas.width / 2, 50);
-const cacti_3 = new Cactus(cactus_3, canvas.width * 0.75, 100);
+//const cacti_1 = new Cactus(cactus_1, canvas.width / 2, 50);
+//const cacti_3 = new Cactus(cactus_3, canvas.width * 0.75, 100);
 //const ptero = new Pterodactyl(pterodactyl, canvas.width, canvas.height * 0.3, 75);
 
-const cacti = [cacti_1, cacti_3];
+//const cacti = [cacti_1];
 dinosaur.prepareImages();
-cacti.forEach( cactus => {
-    cactus.prepareImages();
-});
+//cacti.forEach( cactus => {
+//    cactus.prepareImages();
+//});
 
 
-const game = new Game(dinosaur, cacti);
+const game = new Game(dinosaur);
 new Controls(dinosaur);
 game.gameLoop();
