@@ -60,7 +60,7 @@ class Dinosaur extends Asset{
         this.isJumping = false; // checks if the dinosaur is jumping
         this.isDucking = false; // checks if the dinosaur is ducking
         this.velocity_y = 0; // vertical veolcity of dinosaur
-        this.gravity = 0.5; // amount added to velocity_y at each frame
+        this.gravity = 0.4; // amount added to velocity_y at each frame
         this.jumpStrength = -10; // initial velocity when dinosaur starts jump (canvas renders top to bottom hence initial velocity is negative)
         this.frameCounter = 0;
         this.currentFrame = 0;
@@ -102,6 +102,31 @@ class Dinosaur extends Asset{
     }
 }
 
+class Cactus extends Asset {
+    constructor(){
+        super(canvas.width, canvas.height / 2, [cactus_1]);
+        this.isMoving = true;
+        this.speed = 5;
+        this.asset_y = this.ground_y;
+        this.asset_height = 75;
+        this.asset_width = 60;
+    }
+  
+    update(){
+        if(this.isMoving){
+            this.asset_x -= this.speed;
+            if(this.asset_x + this.asset_width < 0){
+                this.asset_x = canvas.width;
+            }
+        }
+    }
+  
+    draw(){
+        context.drawImage(this.images_array[0], this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+    }
+}
+
+
 class Controls {
     constructor(dinosaur){
         this.dinosaur = dinosaur;
@@ -129,8 +154,9 @@ class Controls {
 
 
 class Game{
-    constructor(dinosaur){
+    constructor(dinosaur, cactus){
         this.dinosaur = dinosaur; // dino object
+        this.cactus = cactus; // cactus object
     }
 
     gameLoop = () => {
@@ -139,15 +165,20 @@ class Game{
 
         if (this.dinosaur.isRunning){
             this.dinosaur.update();
+            this.cactus.update();
         }
+
+        this.cactus.draw();
         this.dinosaur.draw();
         requestAnimationFrame(this.gameLoop.bind(this)); 
     }
 }
 
 const dinosaur = new Dinosaur();
+const cactus = new Cactus();
 dinosaur.prepareImages();
+cactus.prepareImages();
 
-const game = new Game(dinosaur);
+const game = new Game(dinosaur, cactus);
 new Controls(dinosaur);
 game.gameLoop();
