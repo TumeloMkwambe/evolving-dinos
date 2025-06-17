@@ -59,6 +59,7 @@ class Dinosaur extends Asset{
         this.isRunning = false; // checks if dinosaur is still running
         this.isJumping = false; // checks if the dinosaur is jumping
         this.isDucking = false; // checks if the dinosaur is ducking
+        this.isDead = false;
         this.velocity_y = 0; // vertical veolcity of dinosaur
         this.gravity = 0.4; // amount added to velocity_y at each frame
         this.jumpStrength = -10; // initial velocity when dinosaur starts jump (canvas renders top to bottom hence initial velocity is negative)
@@ -93,7 +94,10 @@ class Dinosaur extends Asset{
                 this.currentFrame = 1 - this.currentFrame;
             }
         }
-        if(this.isDucking){
+        if(this.isDead){
+            context.drawImage(dead, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+        }
+        else if(this.isDucking){
             context.drawImage(this.currentFrame ? left_duck : right_duck, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
         }
         else{
@@ -103,13 +107,13 @@ class Dinosaur extends Asset{
 }
 
 class Cactus extends Asset {
-    constructor(){
-        super(canvas.width, canvas.height / 2, [cactus_1]);
+    constructor(cactus, width){
+        super(canvas.width, canvas.height / 2, [cactus]);
         this.isMoving = true;
         this.speed = 5;
         this.asset_y = this.ground_y;
         this.asset_height = 75;
-        this.asset_width = 60;
+        this.asset_width = width;
     }
   
     update(){
@@ -159,11 +163,24 @@ class Game{
         this.cactus = cactus; // cactus object
     }
 
+    checkCollision = () => {
+        const distance_x = Math.abs(dinosaur.asset_x - cactus.asset_x);
+        const distance_y = Math.abs(dinosaur.asset_y - cactus.asset_y);
+        if (
+            distance_x <= 50 && distance_y <= 50
+        ) {
+            this.dinosaur.isRunning = false;
+            this.dinosaur.isDead = true;
+        }
+    }
+
+
     gameLoop = () => {
         context.fillStyle = "#F7F7F7";
         context.fillRect(0, 0, canvas.width, canvas.height);
 
         if (this.dinosaur.isRunning){
+            this.checkCollision();
             this.dinosaur.update();
             this.cactus.update();
         }
@@ -175,7 +192,7 @@ class Game{
 }
 
 const dinosaur = new Dinosaur();
-const cactus = new Cactus();
+const cactus = new Cactus(cactus_3, 100);
 dinosaur.prepareImages();
 cactus.prepareImages();
 
