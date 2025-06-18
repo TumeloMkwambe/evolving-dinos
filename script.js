@@ -56,7 +56,7 @@ class Asset {
     }
 }
 
-class Dinosaur extends Asset{
+class Dinosaur extends Asset {
     constructor(x, y, width, height, speed, images_array){
         super(x, y, width, height, speed, images_array);
         this.isRunning = false;
@@ -143,6 +143,7 @@ class Ground extends Asset {
     constructor(x, y, width, height, speed, images_array){
         super(x, y, width, height, speed, images_array);
         this.isMoving = true;
+        this.prepareImages();
     }
 
     update(){
@@ -189,9 +190,11 @@ class Controls {
     }
 }
 
-class Game{
-    constructor(ground_i, ground_ii, dinosaur){
-        this.ground_array = [ground_i, ground_ii];
+class Game {
+    constructor(dinosaur){
+        this.ground_array = [
+            new Ground(0, canvas.height / 1.62, canvas.width, 25, 5, [ground]), 
+            new Ground(canvas.width, canvas.height / 1.62, canvas.width, 25, 5, [ground])];
         this.dinosaur = dinosaur;
         this.obstacle_array = [];
         this.frameCounter = 0;
@@ -242,7 +245,6 @@ class Game{
         this.obstacle_array.push(newObstacle);
     };
 
-
     gameLoop = () => {
         context.fillStyle = "#F7F7F7";
         context.fillRect(0, 0, canvas.width, canvas.height);
@@ -258,14 +260,14 @@ class Game{
                 this.dinosaur.speed = this.gameSpeed;
             }
 
-            this.addObstacle();
-
-            this.dinosaur.update();
             this.ground_array.forEach(ground => {
                 ground.speed = this.gameSpeed;
                 ground.update();
-                ground.draw();
             });
+
+            this.dinosaur.update();
+
+            this.addObstacle();
             this.obstacle_array.forEach( obstacle => {
                 obstacle.update();
             });
@@ -274,6 +276,9 @@ class Game{
             this.frameCounter++;
         }
 
+        this.ground_array.forEach(ground => {
+            ground.draw();
+        });
 
         this.obstacle_array.forEach( obstacle => {
             obstacle.draw();
@@ -283,11 +288,9 @@ class Game{
     }
 }
 
-const ground_i = new Ground(0, canvas.height / 1.62, canvas.width, 25, 5, [ground]);
-const ground_ii = new Ground(canvas.width, canvas.height / 1.62, canvas.width, 25, 5, [ground]);
 
 const dinosaur = new Dinosaur(canvas.width / 4, canvas.height / 2, 75, 75, 5, [left_duck, left_run, right_duck, right_run, dead]);
 dinosaur.prepareImages();
-const game = new Game(ground_i, ground_ii, dinosaur);
+const game = new Game(dinosaur);
 new Controls(dinosaur);
 game.gameLoop();
