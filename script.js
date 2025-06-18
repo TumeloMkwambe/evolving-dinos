@@ -5,7 +5,7 @@ const prepareCanvas = () => {
     context.fillStyle = "#F7F7F7";
     context.fillRect(0, 0, canvas.width, canvas.height);
     canvas.width = window.innerWidth - window.innerWidth / 64;
-    canvas.height = window.innerHeight / 4;
+    canvas.height = window.innerHeight / 2;
 }
 
 prepareCanvas()
@@ -64,7 +64,7 @@ class Dinosaur extends Asset{
 
         this.velocity_y = 0;
         this.gravity = 0.7;
-        this.jumpStrength = -15;
+        this.jumpStrength = -17;
 
         this.frameCounter = 0;
         this.currentFrame = 0;
@@ -74,6 +74,13 @@ class Dinosaur extends Asset{
         if (!this.isJumping){
             this.isJumping = true;
             this.velocity_y = this.jumpStrength;
+        }
+    }
+
+    duck(){
+        if (!this.isDucking){
+            this.isDucking = true;
+            this.asset_y += 1;
         }
     }
   
@@ -147,7 +154,7 @@ class Controls {
                 }
             }
             if (e.key === "ArrowDown") { 
-                this.dinosaur.isDucking = true;
+                this.dinosaur.duck();
             }
         });
 
@@ -185,17 +192,32 @@ class Game{
         return total / this.obstacle_array.length || 5;
     };
 
-    // find mechanism to pop up different obstacles placed appropriately relative to each other
     addObstacle = () => {
-        if (this.frameCounter % 100 === 0 && this.frameCounter !== 0) {
-            if (Math.random() < 0.5) {
-                const newObstacle = new Obstacle(canvas.width * (1 + Math.random()), canvas.height / 2, 50, 75, [cactus_1]);
-                newObstacle.speed = this.gameSpeed;
-                newObstacle.prepareImages();
-                this.cacti.push(newCactus);
-            }
+        if (this.frameCounter % 100 !== 0) return;
+
+        const minSpacing = 300;
+        const lastObstacle = this.obstacle_array[this.obstacle_array.length - 1];
+
+        if (lastObstacle && lastObstacle.asset_x + lastObstacle.asset_width > canvas.width - minSpacing) {
+            return;
         }
-    }
+
+        const rand = Math.random();
+        let newObstacle;
+
+        if (rand < 0.5) {
+            newObstacle = new Obstacle(canvas.width + Math.random() * 100, canvas.height / 2, 50, 75, this.gameSpeed, [cactus_1]);
+        } else if (rand < 0.8) {
+            newObstacle = new Obstacle(canvas.width + Math.random() * 100, canvas.height / 2, 100, 75, this.gameSpeed, [cactus_3]);
+        } else {
+            newObstacle = new Obstacle(canvas.width + Math.random() * 100, canvas.height * 0.3 + Math.random() * 20, 75, 50, this.gameSpeed, [pterodactyl]);
+        }
+
+        newObstacle.speed = this.gameSpeed;
+        newObstacle.prepareImages();
+        this.obstacle_array.push(newObstacle);
+    };
+
 
     gameLoop = () => {
         context.fillStyle = "#F7F7F7";
@@ -212,7 +234,7 @@ class Game{
                 this.dinosaur.speed = this.gameSpeed;
             }
 
-            //this.addObstacle();
+            this.addObstacle();
 
             this.dinosaur.update();
             this.obstacle_array.forEach( obstacle => {
