@@ -30,14 +30,15 @@ dead.src = "../Assets/dead.webp";
 pterodactyl.src = "../Assets/pterodactyl.png";
 
 class Asset {
-    constructor(x, images_array){
-        this.ground_y = canvas.height / 2; // y coordinate of the world ground
-        this.asset_x = x; // x coordinate of the asset
-        this.asset_y = this.ground_y; // y coordinate of the asset
-        this.asset_width = 75; // width of world asset (dinosaur, cactus, ...)
-        this.asset_height = 75; // height of world asset
-        this.images_array = images_array; // array of images of asset
-        this.images_loaded = false; // checks if asset images are loaded
+    constructor(x, y, width, height, speed, images_array){
+        this.ground_y = canvas.height / 2;
+        this.asset_x = x;
+        this.asset_y = y;
+        this.asset_width = width;
+        this.asset_height = height;
+        this.speed = speed;
+        this.images_array = images_array;
+        this.images_loaded = false;
     }
 
     prepareImages(){
@@ -54,18 +55,19 @@ class Asset {
 }
 
 class Dinosaur extends Asset{
-    constructor(){
-        super(canvas.width / 4, [right_run, left_run, left_duck, right_duck, dead]);
-        this.isRunning = false; // checks if dinosaur is still running
-        this.isJumping = false; // checks if the dinosaur is jumping
-        this.isDucking = false; // checks if the dinosaur is ducking
+    constructor(x, y, width, height, speed, images_array){
+        super(x, y, width, height, speed, images_array);
+        this.isRunning = false;
+        this.isJumping = false;
+        this.isDucking = false;
         this.isDead = false;
-        this.velocity_y = 0; // vertical veolcity of dinosaur
-        this.gravity = 0.3; // amount added to velocity_y at each frame
-        this.jumpStrength = -10; // initial velocity when dinosaur starts jump (canvas renders top to bottom hence initial velocity is negative)
+
+        this.velocity_y = 0;
+        this.gravity = 0.7;
+        this.jumpStrength = -15;
+
         this.frameCounter = 0;
         this.currentFrame = 0;
-        this.averageCactusSpeed = 5;
     }
   
     jump(){
@@ -91,8 +93,7 @@ class Dinosaur extends Asset{
     draw(){
         if(this.isRunning){
             this.frameCounter++;
-            const averageCactusSpeed = this.averageCactusSpeed || 5;
-            const animationRate = Math.max(2, Math.floor(50 / averageCactusSpeed));
+            const animationRate = Math.max(2, Math.floor(50 / this.speed));
             if(this.frameCounter % (animationRate + 10) === 0){
                 this.currentFrame = 1 - this.currentFrame;
             }
@@ -109,15 +110,13 @@ class Dinosaur extends Asset{
     }
 }
 
-class Cactus extends Asset {
-    constructor(cactus, x, width){
-        super(x, [cactus]);
+class Obstacle extends Asset {
+    constructor(x, y, width, height, speed, images_array){
+        super(x, y, width, height, speed, images_array);
         this.isMoving = true;
-        this.speed = 5;
-        this.asset_height = 75;
-        this.asset_width = width;
+        this.isOutOfScreen = false;
     }
-  
+
     update(){
         if(this.isMoving){
             this.asset_x -= this.speed;
@@ -125,32 +124,7 @@ class Cactus extends Asset {
 
         }
     }
-  
-    draw(){
-        context.drawImage(this.images_array[0], this.asset_x, this.asset_y, this.asset_width, this.asset_height);
-    }
-}
 
-
-class Pterodactyl extends Asset {
-    constructor(cactus, x, y, width){
-        super(x, [cactus]);
-        this.isMoving = true;
-        this.speed = 5;
-        this.asset_height = 75;
-        this.asset_width = width;
-        this.asset_y = y;
-    }
-  
-    update(){
-        if(this.isMoving){
-            this.asset_x -= this.speed;
-            if(this.asset_x + this.asset_width < 0){
-                this.asset_x = canvas.width;
-            }
-        }
-    }
-  
     draw(){
         context.drawImage(this.images_array[0], this.asset_x, this.asset_y, this.asset_width, this.asset_height);
     }
@@ -188,14 +162,15 @@ class Controls {
 class Game{
     constructor(dinosaur){
         this.dinosaur = dinosaur;
-        this.cacti = [];
+        this.obstacle_array = [];
         this.frameCounter = 0;
+        this.gameSpeed = 5;
     }
 
     checkCollision = () => {
-        this.cacti.forEach( cactus => {
-            const distance_x = Math.abs(dinosaur.asset_x - cactus.asset_x);
-            const distance_y = Math.abs(dinosaur.asset_y - cactus.asset_y);
+        this.obstacle_array.forEach( obstacle => {
+            const distance_x = Math.abs(dinosaur.asset_x - obstacle.asset_x);
+            const distance_y = Math.abs(dinosaur.asset_y - obstacle.asset_y);
             if (
                 distance_x <= 50 && distance_y <= 50
             ) {
@@ -205,26 +180,21 @@ class Game{
         });
     }
 
-    getAverageCactusSpeed = () => {
-        const total = this.cacti.reduce((sum, c) => sum + c.speed, 0);
-        return total / this.cacti.length || 5;
+    getGameSpeed = () => {
+        const total = this.obstacle_array.reduce((sum, c) => sum + c.speed, 0);
+        return total / this.obstacle_array.length || 5;
     };
 
-    addCacti = () => {
+    // find mechanism to pop up different obstacles placed appropriately relative to each other
+    addObstacle = () => {
         if (this.frameCounter % 100 === 0 && this.frameCounter !== 0) {
             if (Math.random() < 0.5) {
-                console.log("Add Cactus!");
-                const newCactus = new Cactus(
-                    cactus_1, 
-                    canvas.width * (1 + Math.random()), 
-                    50
-                );
-                newCactus.speed = this.getAverageCactusSpeed();
-                newCactus.prepareImages();
+                const newObstacle = new Obstacle(canvas.width * (1 + Math.random()), canvas.height / 2, 50, 75, [cactus_1]);
+                newObstacle.speed = this.gameSpeed;
+                newObstacle.prepareImages();
                 this.cacti.push(newCactus);
             }
         }
-        console.log(`Cacti: ${this.cacti}`);
     }
 
     gameLoop = () => {
@@ -234,45 +204,35 @@ class Game{
         if (this.dinosaur.isRunning){
             this.checkCollision();
 
-            console.log(`Frame Counter: ${this.frameCounter}.`);
             if (this.frameCounter % 500 === 0 && this.frameCounter !== 0) {
-                this.cacti.forEach((cactus) => {
-                    cactus.speed += 1;
-                    this.dinosaur.averageCactusSpeed = this.getAverageCactusSpeed();
+                this.gameSpeed += 1;
+                this.obstacle_array.forEach( obstacle => {
+                    obstacle.speed = this.gameSpeed;
                 });
+                this.dinosaur.speed = this.gameSpeed;
             }
 
-            this.addCacti();
+            //this.addObstacle();
 
             this.dinosaur.update();
-            this.cacti.forEach( cactus => {
-                cactus.update();
+            this.obstacle_array.forEach( obstacle => {
+                obstacle.update();
             });
-            this.cacti = this.cacti.filter(cactus => !cactus.isOutOfScreen);
+            this.obstacle_array = this.obstacle_array.filter(obstacle => !obstacle.isOutOfScreen);
 
             this.frameCounter++;
         }
 
-        this.cacti.forEach( cactus => {
-            cactus.draw();
+        this.obstacle_array.forEach( obstacle => {
+            obstacle.draw();
         });
         this.dinosaur.draw();
         requestAnimationFrame(this.gameLoop.bind(this)); 
     }
 }
 
-const dinosaur = new Dinosaur();
-//const cacti_1 = new Cactus(cactus_1, canvas.width / 2, 50);
-//const cacti_3 = new Cactus(cactus_3, canvas.width * 0.75, 100);
-//const ptero = new Pterodactyl(pterodactyl, canvas.width, canvas.height * 0.3, 75);
-
-//const cacti = [cacti_1];
+const dinosaur = new Dinosaur(canvas.width / 4, canvas.height / 2, 75, 75, 5, [left_duck, left_run, right_duck, right_run, dead]);
 dinosaur.prepareImages();
-//cacti.forEach( cactus => {
-//    cactus.prepareImages();
-//});
-
-
 const game = new Game(dinosaur);
 new Controls(dinosaur);
 game.gameLoop();
