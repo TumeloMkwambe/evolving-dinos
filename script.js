@@ -1,3 +1,5 @@
+import { Asset } from "./asset.js";
+
 const canvas = document.querySelector("canvas");
 const context = canvas.getContext("2d");
 
@@ -31,34 +33,9 @@ dead.src = "../Assets/dead.webp";
 pterodactyl.src = "../Assets/pterodactyl.png";
 ground.src = "../Assets/ground.png";
 
-class Asset {
-    constructor(x, y, width, height, speed, images_array){
-        this.ground_y = canvas.height / 2;
-        this.asset_x = x;
-        this.asset_y = y;
-        this.asset_width = width;
-        this.asset_height = height;
-        this.speed = speed;
-        this.images_array = images_array;
-        this.images_loaded = false;
-    }
-
-    prepareImages(){
-        let imagesLoaded = 0;
-        this.images_array.forEach(img => {
-            img.onload = () => {
-                imagesLoaded++;
-                if (imagesLoaded === this.images_array.length){
-                    this.images_loaded = true;
-                }
-            };
-        });
-    }
-}
-
 class Dinosaur extends Asset {
     constructor(x, y, width, height, speed, images_array){
-        super(x, y, width, height, speed, images_array);
+        super(canvas, x, y, width, height, speed, images_array);
         this.isRunning = false;
         this.isJumping = false;
         this.isDucking = false;
@@ -121,7 +98,7 @@ class Dinosaur extends Asset {
 
 class Obstacle extends Asset {
     constructor(x, y, width, height, speed, images_array){
-        super(x, y, width, height, speed, images_array);
+        super(canvas, x, y, width, height, speed, images_array);
         this.isMoving = true;
         this.isOutOfScreen = false;
     }
@@ -141,7 +118,7 @@ class Obstacle extends Asset {
 
 class Ground extends Asset {
     constructor(x, y, width, height, speed, images_array){
-        super(x, y, width, height, speed, images_array);
+        super(canvas, x, y, width, height, speed, images_array);
         this.isMoving = true;
         this.prepareImages();
     }
