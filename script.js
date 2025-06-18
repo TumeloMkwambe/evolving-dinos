@@ -19,6 +19,7 @@ const right_run = new Image();
 const left_duck = new Image();
 const right_duck = new Image();
 const pterodactyl = new Image();
+const ground = new Image();
 
 right_run.src = "../Assets/right_run.webp";
 left_run.src = "../Assets/left_run.webp";
@@ -28,6 +29,7 @@ right_duck.src = "../Assets/right_duck.webp";
 left_duck.src = "../Assets/left_duck.webp";
 dead.src = "../Assets/dead.webp";
 pterodactyl.src = "../Assets/pterodactyl.png";
+ground.src = "../Assets/ground.png";
 
 class Asset {
     constructor(x, y, width, height, speed, images_array){
@@ -137,6 +139,27 @@ class Obstacle extends Asset {
     }
 }
 
+class Ground extends Asset {
+    constructor(x, y, width, height, speed, images_array){
+        super(x, y, width, height, speed, images_array);
+        this.isMoving = true;
+    }
+
+    update(){
+        if (this.isMoving) {
+            this.asset_x -= this.speed;
+
+            if (this.asset_x + this.asset_width <= 0) {
+                this.asset_x += this.asset_width * 2;
+            }
+        }
+    }
+
+    draw(){
+        context.drawImage(this.images_array[0], this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+    }
+}
+
 class Controls {
     constructor(dinosaur){
         this.dinosaur = dinosaur;
@@ -167,7 +190,8 @@ class Controls {
 }
 
 class Game{
-    constructor(dinosaur){
+    constructor(ground_i, ground_ii, dinosaur){
+        this.ground_array = [ground_i, ground_ii];
         this.dinosaur = dinosaur;
         this.obstacle_array = [];
         this.frameCounter = 0;
@@ -237,6 +261,11 @@ class Game{
             this.addObstacle();
 
             this.dinosaur.update();
+            this.ground_array.forEach(ground => {
+                ground.speed = this.gameSpeed;
+                ground.update();
+                ground.draw();
+            });
             this.obstacle_array.forEach( obstacle => {
                 obstacle.update();
             });
@@ -244,6 +273,7 @@ class Game{
 
             this.frameCounter++;
         }
+
 
         this.obstacle_array.forEach( obstacle => {
             obstacle.draw();
@@ -253,8 +283,11 @@ class Game{
     }
 }
 
+const ground_i = new Ground(0, canvas.height / 1.62, canvas.width, 25, 5, [ground]);
+const ground_ii = new Ground(canvas.width, canvas.height / 1.62, canvas.width, 25, 5, [ground]);
+
 const dinosaur = new Dinosaur(canvas.width / 4, canvas.height / 2, 75, 75, 5, [left_duck, left_run, right_duck, right_run, dead]);
 dinosaur.prepareImages();
-const game = new Game(dinosaur);
+const game = new Game(ground_i, ground_ii, dinosaur);
 new Controls(dinosaur);
 game.gameLoop();
