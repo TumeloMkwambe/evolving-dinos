@@ -1,4 +1,4 @@
-import { NeuralNetwork } from "./neural_network.js";
+import { Network, Layer, Parameters } from "./neural_network.js";
 
 /*
 function decideAction(inputs, genome) {
