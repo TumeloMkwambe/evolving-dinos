@@ -1,5 +1,6 @@
 import { NeuralNetwork } from "./neural_network.js";
 
+/*
 function decideAction(inputs, genome) {
     const [w1, w2, w3, b] = genome;
     const sum = inputs[0]*w1 + inputs[1]*w2 + inputs[2]*w3 + b;
@@ -40,3 +41,4 @@ while (newPopulation.length < populationSize) {
     newPopulation.push({ genome: child, fitness: 0 });
 }
 population = newPopulation;
+*/
