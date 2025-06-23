@@ -27,7 +27,6 @@ export class Actions{
         return index;
     }
 
-
     construct_input(canvas, obstacle_array, speed){
         let obstacle_positions = this.get_obstacle_positions(obstacle_array);
         const dino_x = this.dino.asset_x;
@@ -46,13 +45,12 @@ export class Actions{
         const distance_x = nearest_obstacle[0] - dino_x;
         const distance_y = nearest_obstacle[1] - dino_y;
 
-        this.input = [distance_x / canvas.width, distance_y / canvas.width, speed / canvas.width];
+        this.input = [distance_x / canvas.width, distance_y / canvas.width, speed];
     }
 
     select_action(canvas, obstacle_array, speed){
         this.construct_input(canvas, obstacle_array, speed);
         const output = this.network.feedforward(this.input)[0];
-        console.log(output);
         const action = this.argmax(output);
 
         if (action === 0) {
