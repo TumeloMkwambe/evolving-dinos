@@ -13,10 +13,9 @@ export class Genome {
 }
 
 export class GeneticAlgorithm {
-    constructor(population_size, input_size, hidden_size, output_size) {
+    constructor(population_size, input_size, output_size) {
         this.population_size = population_size;
         this.input_size = input_size;
-        this.hidden_size = hidden_size;
         this.output_size = output_size;
         this.population = this.initializePopulation();
     }
@@ -26,7 +25,9 @@ export class GeneticAlgorithm {
         for (let i = 0; i < this.population_size; i++) {
             const net = new Network();
             net.addLayer(this.input_size, "relu");
-            net.addLayer(this.hidden_size, "relu");
+            net.addLayer(64, "relu");
+            net.addLayer(32, "relu");
+            net.addLayer(16, "relu");
             net.addLayer(this.output_size, "softmax");
             population.push(new Genome(net));
         }
