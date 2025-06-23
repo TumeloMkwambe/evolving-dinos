@@ -1,8 +1,10 @@
+// Implementation of multilayer perceptron model building framework.
+
 export class Layer {
     constructor(num_nodes, activation) {
-        this.num_nodes = num_nodes; // number of nodes (neurons) in layer
-        this.nodes = Array.from({ length: 1 }, () => Array(num_nodes).fill(0)); // array of shape 1xN (N=number of nodes)
-        this.activation = activation; // activation function associated with layer
+        this.num_nodes = num_nodes;
+        this.nodes = Array.from({ length: 1 }, () => Array(num_nodes).fill(0));
+        this.activation = activation;
     }
 
     relu(matrix) {
@@ -18,17 +20,23 @@ export class Layer {
             return matrix.map(row => row.map(val => Math.max(0, val)));
         } else if (funcName === "sigmoid") {
             return matrix.map(row => row.map(val => 1 / (1 + Math.exp(-val))));
+        } else if (funcName === "softmax") {
+            return matrix.map(row => {
+                const max = Math.max(...row);
+                const exps = row.map(val => Math.exp(val - max));
+                const sum = exps.reduce((a, b) => a + b, 0);
+                return exps.map(exp => exp / sum);
+            });
         } else {
             throw new Error(`Unknown activation function: ${funcName}`);
         }
     }
-
 }
 
 export class Parameters {
     constructor(firstLayerNodes, secondLayerNodes) {
-        this.weights = this.randomMatrix(firstLayerNodes, secondLayerNodes, -1, 1); // matrix of weights between two layers
-        this.bias = [this.randomArray(secondLayerNodes, -1, 1)]; // array of bias values
+        this.weights = this.randomMatrix(firstLayerNodes, secondLayerNodes, -1, 1);
+        this.bias = [this.randomArray(secondLayerNodes, -1, 1)];
 
     }
 
@@ -45,8 +53,8 @@ export class Parameters {
 
 export class Network {
     constructor() {
-        this.Layers = []; // array of layers in neural network
-        this.Parameters = []; // parameters (weights of edges) between layers in neural networks
+        this.Layers = [];
+        this.Parameters = [];
     }
 
     addLayer(numNodes, activationFunction) {
@@ -94,6 +102,23 @@ export class Network {
         return result;
     }
 
+    copy() {
+        const new_network = new Network();
+        for (const layer of this.Layers) {
+            new_network.addLayer(layer.num_nodes, layer.activation);
+        }
+
+        for (let i = 0; i < this.Parameters.length; i++) {
+            const original = this.Parameters[i];
+            const clone = new Parameters(original.weights.length, original.weights[0].length);
+            clone.weights = original.weights.map(row => row.slice());
+            clone.bias = original.bias.map(row => row.slice());
+            new_network.Parameters[i] = clone;
+        }
+
+        return new_network;
+    }
+
     feedforward(datapoint) {
         this.Layers[0].nodes = [datapoint];
 
@@ -102,9 +127,7 @@ export class Network {
             const weights = this.Parameters[i].weights;
             const bias = this.Parameters[i].bias;
             const z = this.addMatrices(this.matMul(input, weights), bias);
-            console.log(`Z: ${z}`);
             this.Layers[i + 1].nodes = this.Layers[i + 1].applyActivation(z, this.Layers[i + 1].activation);
-            console.log(`Output: ${this.Layers[i+1].nodes}`);
         }
 
         return this.Layers[this.Layers.length - 1].nodes;

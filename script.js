@@ -1,4 +1,10 @@
 import { Asset } from "./asset.js";
+import { Actions } from "./actions.js";
+import { GeneticAlgorithm } from "./evolution.js";
+
+// -------------------------
+// CANVAS INITIALIZATION
+// -------------------------
 
 const canvas = document.querySelector("canvas");
 const context = canvas.getContext("2d");
@@ -13,25 +19,35 @@ const prepareCanvas = () => {
 prepareCanvas()
 window.addEventListener('resize', prepareCanvas)
 
-const dead = new Image();
-const cactus_3 = new Image()
-const left_run = new Image();
-const cactus_1 = new Image();
-const right_run = new Image();
-const left_duck = new Image();
-const right_duck = new Image();
-const pterodactyl = new Image();
-const ground = new Image();
+// -------------------------
+// IMAGE PROCESSING
+// -------------------------
 
-right_run.src = "../Assets/right_run.webp";
-left_run.src = "../Assets/left_run.webp";
-cactus_1.src = "../Assets/1_cactus.webp";
-cactus_3.src = "../Assets/3_cactus.webp";
-right_duck.src = "../Assets/right_duck.webp";
-left_duck.src = "../Assets/left_duck.webp";
-dead.src = "../Assets/dead.webp";
-pterodactyl.src = "../Assets/pterodactyl.png";
-ground.src = "../Assets/ground.png";
+const imageAssets = {
+    dead: new Image(),
+    cactus_3: new Image(),
+    left_run: new Image(),
+    cactus_1: new Image(),
+    right_run: new Image(),
+    left_duck: new Image(),
+    right_duck: new Image(),
+    pterodactyl: new Image(),
+    ground: new Image()
+};
+
+imageAssets.dead.src = "../Assets/dead.webp";
+imageAssets.cactus_3.src = "../Assets/3_cactus.webp";
+imageAssets.left_run.src = "../Assets/left_run.webp";
+imageAssets.cactus_1.src = "../Assets/1_cactus.webp";
+imageAssets.right_run.src = "../Assets/right_run.webp";
+imageAssets.left_duck.src = "../Assets/left_duck.webp";
+imageAssets.right_duck.src = "../Assets/right_duck.webp";
+imageAssets.pterodactyl.src = "../Assets/pterodactyl.png";
+imageAssets.ground.src = "../Assets/ground.png";
+
+// -------------------------
+// GAME CLASSES
+// -------------------------
 
 class Dinosaur extends Asset {
     constructor(x, y, width, height, speed, images_array){
@@ -85,13 +101,13 @@ class Dinosaur extends Asset {
             }
         }
         if(this.isDead){
-            context.drawImage(dead, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+            context.drawImage(imageAssets.dead, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
         }
         else if(this.isDucking){
-            context.drawImage(this.currentFrame ? left_duck : right_duck, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+            context.drawImage(this.currentFrame ? imageAssets.left_duck : imageAssets.right_duck, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
         }
         else{
-            context.drawImage(this.currentFrame ? left_run : right_run, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
+            context.drawImage(this.currentFrame ? imageAssets.left_run : imageAssets.right_run, this.asset_x, this.asset_y, this.asset_width, this.asset_height);
         }
     }
 }
@@ -138,136 +154,109 @@ class Ground extends Asset {
     }
 }
 
-class Controls {
-    constructor(dinosaur){
-        this.dinosaur = dinosaur;
+// -------------------------
+// GENETIC ALGORITHM LOGIC
+// -------------------------
 
-        window.addEventListener('keydown', (e) => {
-            if (e.key === " ") {
-                if (this.dinosaur.isDead) {
-                    location.reload();
-                } 
-                else if (!this.dinosaur.isRunning) {
-                    this.dinosaur.isRunning = true;
-                }
-                else if (this.dinosaur.isRunning && !this.dinosaur.isJumping) {
-                    this.dinosaur.jump();
-                }
-            }
-            if (e.key === "ArrowDown") { 
-                this.dinosaur.duck();
-            }
-        });
+const populationSize = 4;
+const inputSize = 3;
+const hiddenSize = 6;
+const outputSize = 3;
+const ga = new GeneticAlgorithm(populationSize, inputSize, hiddenSize, outputSize);
 
-        window.addEventListener('keyup', (e) => {
-            if (e.key === "ArrowDown") { 
-                this.dinosaur.isDucking = false;
+let generation = 0;
+let dinos = [];
+let actions = [];
+let obstacle_array = [];
+let frameCounter = 0;
+let gameSpeed = 5;
+
+let ground_array = [
+    new Ground(0, canvas.height / 1.62, canvas.width, 25, gameSpeed, [imageAssets.ground]),
+    new Ground(canvas.width, canvas.height / 1.62, canvas.width, 25, gameSpeed, [imageAssets.ground])
+];
+
+function initGeneration() {
+    dinos = ga.population.map(genome => {
+        const dino = new Dinosaur(canvas.width / 4, canvas.height / 2, 75, 75, gameSpeed, [
+            imageAssets.left_duck, imageAssets.left_run, imageAssets.right_duck, imageAssets.right_run, imageAssets.dead
+        ]);
+        dino.prepareImages();
+        return { dino, network: genome.network, genome };
+    });
+    actions = dinos.map(({ dino, network }) => new Actions(dino, network));
+    obstacle_array = [];
+    frameCounter = 0;
+}
+
+function checkCollision(dino) {
+    return obstacle_array.some(ob => {
+        const dx = Math.abs(dino.asset_x - ob.asset_x);
+        const dy = Math.abs(dino.asset_y - ob.asset_y);
+        return dx < 50 && dy < 50;
+    });
+}
+
+function addObstacle() {
+    if (frameCounter % 100 !== 0) return;
+    const minSpacing = 300;
+    const last = obstacle_array[obstacle_array.length - 1];
+    if (last && last.asset_x + last.asset_width > canvas.width - minSpacing) return;
+    const rand = Math.random();
+    let newObstacle;
+    if (rand < 0.5) newObstacle = new Obstacle(canvas.width + Math.random() * 100, canvas.height / 2, 50, 75, gameSpeed, [imageAssets.cactus_1]);
+    else if (rand < 0.8) newObstacle = new Obstacle(canvas.width + Math.random() * 100, canvas.height / 2, 100, 75, gameSpeed, [imageAssets.cactus_3]);
+    else newObstacle = new Obstacle(canvas.width + Math.random() * 100, canvas.height * 0.3 + Math.random() * 20, 75, 50, gameSpeed, [imageAssets.pterodactyl]);
+    newObstacle.prepareImages();
+    obstacle_array.push(newObstacle);
+}
+
+function update() {
+    frameCounter++;
+    ground_array.forEach(g => { g.speed = gameSpeed; g.update(); });
+    addObstacle();
+    obstacle_array.forEach(o => o.update());
+    obstacle_array = obstacle_array.filter(o => !o.isOutOfScreen);
+
+    dinos.forEach((dinoObj, index) => {
+        const dino = dinoObj.dino;
+        if (!dino.isDead) {
+            dino.update();
+            actions[index].select_action(canvas, obstacle_array, gameSpeed);
+            if (checkCollision(dino)) {
+                dino.isDead = true;
+                dinoObj.genome.fitness = frameCounter;
             }
-        });
+        }
+    });
+
+    if (frameCounter % 500 === 0) gameSpeed++;
+    if (dinos.every(d => d.dino.isDead)) {
+        console.log('ALL DEAD!');
+        generation++;
+        ga.evolve();
+        initGeneration();
+        gameSpeed = 5;
+        frameCounter = 0;
     }
 }
 
-class Game {
-    constructor(dinosaur){
-        this.ground_array = [
-            new Ground(0, canvas.height / 1.62, canvas.width, 25, 5, [ground]), 
-            new Ground(canvas.width, canvas.height / 1.62, canvas.width, 25, 5, [ground])];
-        this.dinosaur = dinosaur;
-        this.obstacle_array = [];
-        this.frameCounter = 0;
-        this.gameSpeed = 5;
-    }
-
-    checkCollision = () => {
-        this.obstacle_array.forEach( obstacle => {
-            const distance_x = Math.abs(dinosaur.asset_x - obstacle.asset_x);
-            const distance_y = Math.abs(dinosaur.asset_y - obstacle.asset_y);
-            if (
-                distance_x <= 50 && distance_y <= 50
-            ) {
-                this.dinosaur.isRunning = false;
-                this.dinosaur.isDead = true;
-            }
-        });
-    }
-
-    getGameSpeed = () => {
-        const total = this.obstacle_array.reduce((sum, c) => sum + c.speed, 0);
-        return total / this.obstacle_array.length || 5;
-    };
-
-    addObstacle = () => {
-        if (this.frameCounter % 100 !== 0) return;
-
-        const minSpacing = 300;
-        const lastObstacle = this.obstacle_array[this.obstacle_array.length - 1];
-
-        if (lastObstacle && lastObstacle.asset_x + lastObstacle.asset_width > canvas.width - minSpacing) {
-            return;
-        }
-
-        const rand = Math.random();
-        let newObstacle;
-
-        if (rand < 0.5) {
-            newObstacle = new Obstacle(canvas.width + Math.random() * 100, canvas.height / 2, 50, 75, this.gameSpeed, [cactus_1]);
-        } else if (rand < 0.8) {
-            newObstacle = new Obstacle(canvas.width + Math.random() * 100, canvas.height / 2, 100, 75, this.gameSpeed, [cactus_3]);
-        } else {
-            newObstacle = new Obstacle(canvas.width + Math.random() * 100, canvas.height * 0.3 + Math.random() * 20, 75, 50, this.gameSpeed, [pterodactyl]);
-        }
-
-        newObstacle.speed = this.gameSpeed;
-        newObstacle.prepareImages();
-        this.obstacle_array.push(newObstacle);
-    };
-
-    gameLoop = () => {
-        context.fillStyle = "#F7F7F7";
-        context.fillRect(0, 0, canvas.width, canvas.height);
-
-        if (this.dinosaur.isRunning){
-            this.checkCollision();
-
-            if (this.frameCounter % 500 === 0 && this.frameCounter !== 0) {
-                this.gameSpeed += 1;
-                this.obstacle_array.forEach( obstacle => {
-                    obstacle.speed = this.gameSpeed;
-                });
-                this.dinosaur.speed = this.gameSpeed;
-            }
-
-            this.ground_array.forEach(ground => {
-                ground.speed = this.gameSpeed;
-                ground.update();
-            });
-
-            this.dinosaur.update();
-
-            this.addObstacle();
-            this.obstacle_array.forEach( obstacle => {
-                obstacle.update();
-            });
-            this.obstacle_array = this.obstacle_array.filter(obstacle => !obstacle.isOutOfScreen);
-
-            this.frameCounter++;
-        }
-
-        this.ground_array.forEach(ground => {
-            ground.draw();
-        });
-
-        this.obstacle_array.forEach( obstacle => {
-            obstacle.draw();
-        });
-        this.dinosaur.draw();
-        requestAnimationFrame(this.gameLoop.bind(this)); 
-    }
+function draw() {
+    context.fillStyle = "#F7F7F7";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    ground_array.forEach(g => g.draw());
+    obstacle_array.forEach(o => o.draw());
+    dinos.forEach(d => d.dino.draw());
+    context.fillStyle = "black";
+    context.fillText(`Generation: ${generation}`, 30, 20);
+    context.fillText(`Alive: ${dinos.filter(d => !d.dino.isDead).length}`, 30, 40);
 }
 
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
 
-const dinosaur = new Dinosaur(canvas.width / 4, canvas.height / 2, 75, 75, 5, [left_duck, left_run, right_duck, right_run, dead]);
-dinosaur.prepareImages();
-const game = new Game(dinosaur);
-new Controls(dinosaur);
-game.gameLoop();
+initGeneration();
+gameLoop();
