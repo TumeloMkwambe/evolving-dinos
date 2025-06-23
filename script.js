@@ -158,7 +158,7 @@ class Ground extends Asset {
 // GENETIC ALGORITHM LOGIC
 // -------------------------
 
-const populationSize = 4;
+const populationSize = 25;
 const inputSize = 3;
 const hiddenSize = 6;
 const outputSize = 3;
@@ -169,6 +169,7 @@ let dinos = [];
 let actions = [];
 let obstacle_array = [];
 let frameCounter = 0;
+let highest_frameCounter = 0;
 let gameSpeed = 5;
 
 let ground_array = [
@@ -216,7 +217,7 @@ function update() {
     ground_array.forEach(g => { g.speed = gameSpeed; g.update(); });
     addObstacle();
     obstacle_array.forEach(o => o.update());
-    obstacle_array = obstacle_array.filter(o => !o.isOutOfScreen);
+    obstacle_array = obstacle_array.filter(obstacle => !obstacle.isOutOfScreen);
 
     dinos.forEach((dinoObj, index) => {
         const dino = dinoObj.dino;
@@ -232,7 +233,9 @@ function update() {
 
     if (frameCounter % 500 === 0) gameSpeed++;
     if (dinos.every(d => d.dino.isDead)) {
-        console.log('ALL DEAD!');
+        if(frameCounter > highest_frameCounter){
+            highest_frameCounter = frameCounter;
+        }
         generation++;
         ga.evolve();
         initGeneration();
@@ -248,8 +251,11 @@ function draw() {
     obstacle_array.forEach(o => o.draw());
     dinos.forEach(d => d.dino.draw());
     context.fillStyle = "black";
-    context.fillText(`Generation: ${generation}`, 30, 20);
-    context.fillText(`Alive: ${dinos.filter(d => !d.dino.isDead).length}`, 30, 40);
+    context.fillText(`Frame Count: ${frameCounter}`, 30, 20);
+    context.fillText(`Generation: ${generation}`, 30, 40);
+    context.fillText(`Alive: ${dinos.filter(d => !d.dino.isDead).length}`, 30, 60);
+    context.fillText(`Dead: ${populationSize - dinos.filter(d => !d.dino.isDead).length}`, 30, 80);
+    context.fillText(`Highest Frame Count: ${highest_frameCounter}`, 30, 100);
 }
 
 function gameLoop() {
