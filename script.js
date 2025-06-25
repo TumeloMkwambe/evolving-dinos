@@ -16,7 +16,7 @@ const prepareCanvas = () => {
 prepareCanvas()
 window.addEventListener('resize', prepareCanvas)
 
-const population_size = 25;
+const population_size = 50;
 const input_size = 3;
 const output_size = 3;
 
