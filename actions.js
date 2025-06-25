@@ -53,11 +53,6 @@ export class Actions{
         const output = this.network.feedforward(this.input)[0];
         const action = this.argmax(output);
 
-        if(Math.random() < 0.0001){
-            console.log(`Input: ${this.input}`);
-            console.log(`Output: ${this.network.feedforward(this.input)[0]}`);
-        }
-
         if (action == 0) {
             this.dino.isDucking = false;
         }
