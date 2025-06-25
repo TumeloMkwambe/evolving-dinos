@@ -1,4 +1,4 @@
-// Genetic Algorithm Implementation
+// Genetic Algorithm Implementation.
 
 import { Network } from "./neural_network.js";
 
@@ -38,10 +38,10 @@ export class GeneticAlgorithm {
 
     evolve() {
         this.population.sort((a, b) => b.fitness - a.fitness);
-        const top = this.population.slice(0, Math.floor(this.population_size / 4));
+        const top = this.population.slice(0, Math.floor(this.population_size / 2));
         const children = [];
 
-        while (children.length < this.population_size - 1) {
+        while (children.length < this.population_size) {
             const parentA = this.selectParent(top);
             const parentB = this.selectParent(top);
 
@@ -49,7 +49,6 @@ export class GeneticAlgorithm {
             this.mutate(child.network);
             children.push(child);
         }
-        children.push(top[0]);
 
         this.population = children;
     }
