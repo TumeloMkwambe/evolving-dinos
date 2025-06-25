@@ -45,7 +45,7 @@ export class Actions{
         const distance_x = nearest_obstacle[0] - dino_x;
         const distance_y = nearest_obstacle[1] - dino_y;
 
-        this.input = [distance_x / canvas.width, distance_y / canvas.width, speed];
+        this.input = [distance_x, distance_y, speed / 5];
     }
 
     select_action(canvas, obstacle_array, speed){
@@ -53,11 +53,19 @@ export class Actions{
         const output = this.network.feedforward(this.input)[0];
         const action = this.argmax(output);
 
-        if (action === 0) {
-            // do nothing
-        } else if (action === 1) {
+        if(Math.random() < 0.0001){
+            console.log(`Input: ${this.input}`);
+            console.log(`Output: ${this.network.feedforward(this.input)[0]}`);
+        }
+
+        if (action == 0) {
+            this.dino.isDucking = false;
+        }
+        else if (action === 1) {
             this.dino.duck();
-        } else {
+        }
+        else {
+            this.dino.isDucking = false;
             this.dino.jump();
         }
     }

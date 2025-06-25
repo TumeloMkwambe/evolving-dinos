@@ -69,7 +69,7 @@ export class Network {
         }
     }
 
-    matMul(A, B) {
+    matrixMultiplication(A, B) {
         const rowsA = A.length;
         const colsA = A[0].length;
         const colsB = B[0].length;
@@ -126,7 +126,7 @@ export class Network {
             const input = this.Layers[i].nodes;
             const weights = this.Parameters[i].weights;
             const bias = this.Parameters[i].bias;
-            const z = this.addMatrices(this.matMul(input, weights), bias);
+            const z = this.addMatrices(this.matrixMultiplication(input, weights), bias);
             this.Layers[i + 1].nodes = this.Layers[i + 1].applyActivation(z, this.Layers[i + 1].activation);
         }
 

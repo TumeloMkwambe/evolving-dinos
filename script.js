@@ -29,7 +29,6 @@ let highest_frame_counter = 0;
 let game_speed = 5;
 const genetic_algorithm = new GeneticAlgorithm(population_size, input_size, output_size);
 
-
 let ground_array = [
     new Ground(canvas, context, 0, canvas.height / 1.62, canvas.width, 25, game_speed),
     new Ground(canvas, context, canvas.width, canvas.height / 1.62, canvas.width, 25, game_speed)
@@ -75,7 +74,6 @@ function addObstacle() {
         new_obstacle = new Obstacle(canvas, context, canvas.width + Math.random() * 100, canvas.height * 0.3 + Math.random() * 20, 75, 50, game_speed, "pterodactyl");
     }
 
-    // new_obstacle.prepareImages();
     obstacle_array.push(new_obstacle);
 }
 
